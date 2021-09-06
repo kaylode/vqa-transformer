@@ -20,6 +20,9 @@ import json
 import datetime
 import copy
 
+def _isArrayLike(obj):
+	return hasattr(obj, '__iter__') and hasattr(obj, '__len__')
+
 class VQA:
 	def __init__(self, annotation_file=None, question_file=None):
 		"""
@@ -54,12 +57,18 @@ class VQA:
 			qa[ann['question_id']] = ann
 		for ques in self.questions['questions']:
 			qqa[ques['question_id']] = ques
+
+		imgs = {}
+		for img in self.dataset['images']:
+			imgs[img['id']] = img
+
 		print('index created!')
 
 		 # create class members
 		self.qa = qa
 		self.qqa = qqa
 		self.imgToQA = imgToQA
+		self.imgs = imgs
 
 	def info(self):
 		"""
@@ -176,3 +185,14 @@ class VQA:
 		res.dataset['annotations'] = anns
 		res.createIndex()
 		return res
+
+	def loadImgs(self, ids=[]):
+		"""
+		Load anns with the specified ids.
+		:param ids (int array)       : integer ids specifying img
+		:return: imgs (object array) : loaded img objects
+		"""
+		if _isArrayLike(ids):
+			return [self.imgs[id] for id in ids]
+		elif type(ids) == int:
+			return [self.imgs[ids]]
