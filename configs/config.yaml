@@ -1,7 +1,7 @@
 settings:
   #################   DATASET CONFIG   ###################
 
-  project_name: "flickr30k-caption"    
+  project_name: "vqa"    
   image_path: 
   train_anns:
   val_anns:
@@ -11,18 +11,18 @@ settings:
   
   model_name:  'catr' 
   language:    'bert-base-uncased'
-  image_size:   [224,224]               # 224 or 384 (pretrained vit support these only)
+  image_size:   [384,384]               # 224 or 384 (pretrained vit support these only)
   keep_ratio:   False
 
   gpu_devices: '0'                     # supports multi-gpus
   num_epochs: 100
-  batch_size: 64
+  batch_size: 128
   num_workers: 2
 
   # learning rate policy
   lr_policy:
     name: "adam"                         #[adam|sgd]
-    lr: 0.0003                            #[adam: 1e-3 | sgd: 1e-2]
+    lr: 0.0005                            #[adam: 1e-3 | sgd: 1e-2]
     momentum: 0.9
     weight_decay: 0.000001
 
