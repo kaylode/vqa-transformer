@@ -111,8 +111,7 @@ class CocoDataset(Dataset):
         annotations_ids = self.coco.getQuesIds(imgIds=self.image_ids[image_index])  
 
         if not return_all:
-            if len(annotations_ids)>1:
-                ann_id = random.choice(annotations_ids)
+            ann_id = random.choice(annotations_ids)
             anns = self.coco.loadQA(ann_id)[0]
             quesId = anns['question_id']
             ques = self.coco.qqa[quesId]['question']
