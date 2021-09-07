@@ -128,12 +128,14 @@ def get_dataset_and_dataloader(config, bottom_up):
     if not bottom_up:
         trainloader = EqualLengthTextLoader(
             ann_path=config.train_anns, root_dir=config.image_path,
+            question_path=config.train_question, class_path=config.class_path,
             image_size=config.image_size, keep_ratio=config.keep_ratio,
             tokenizer=AutoTokenizer.from_pretrained(config.language),
             type='train', batch_size=config.batch_size, device=device)
 
         valloader = RawTextLoader(
             ann_path=config.val_anns, root_dir=config.image_path,
+            question_path=config.val_question, class_path=config.class_path,
             image_size=config.image_size, keep_ratio=config.keep_ratio,
             tokenizer=AutoTokenizer.from_pretrained(config.language),
             type='val', batch_size=config.batch_size)
