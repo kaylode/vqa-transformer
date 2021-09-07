@@ -24,7 +24,7 @@ def _isArrayLike(obj):
 	return hasattr(obj, '__iter__') and hasattr(obj, '__len__')
 
 class VQA:
-	def __init__(self, annotation_file=None, question_file=None):
+	def __init__(self, annotation_file=None, question_file=None, answer_file=None):
 		"""
 		Constructor of VQA helper class for reading and visualizing questions and answers.
 		:param annotation_file (str): location of VQA annotation file
@@ -36,6 +36,8 @@ class VQA:
 		self.qa = {}
 		self.qqa = {}
 		self.imgToQA = {}
+		self.answer_file = answer_file
+
 		if not annotation_file == None and not question_file == None:
 			print('loading VQA annotations and questions into memory...')
 			time_t = datetime.datetime.utcnow()
@@ -44,6 +46,10 @@ class VQA:
 			print(datetime.datetime.utcnow() - time_t)
 			self.dataset = dataset
 			self.questions = questions
+
+			if self.answer_file is not None:
+				self.filterIds(self.answer_file)
+
 			self.createIndex()
 
 	def createIndex(self):
@@ -70,6 +76,35 @@ class VQA:
 		self.qqa = qqa
 		self.imgToQA = imgToQA
 		self.imgs = imgs
+
+	def filterIds(self, answer_file):
+		"""
+		Filter out annotations that not in answer vocabulary
+		"""
+		with open(answer_file, 'r') as f:
+			lines = f.read()
+			answer_vocab = lines.splitlines()
+
+		new_dataset = []
+
+		for ann in self.dataset['annotations']:
+			valid = False
+			remove_indices = []
+			for i, answer in enumerate(ann['answers']):
+				ans = answer['answer']
+				if ans in answer_vocab:
+					valid = True
+				else:
+					remove_indices.append(i)
+			
+			if valid:
+				for idx in reversed(remove_indices):
+					del ann['answers'][idx]
+				new_dataset.append(ann)
+					
+		
+		self.dataset['annotations'] = new_dataset
+			
 
 	def info(self):
 		"""
