@@ -168,5 +168,9 @@ class TransformerBottomUp(nn.Module):
     def forward(self, src, loc_src, trg, src_mask, trg_mask, *args, **kwargs):
         e_outputs = self.encoder(src, loc_src)
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask)
-        output = self.out(d_output)
+
+        # Get first CLS token
+        cls_toks = d_output[:, 0, :]
+
+        output = self.out(cls_toks)
         return output
