@@ -260,20 +260,75 @@ class NumpyFeatureDataset(Dataset):
     """
     Coco dataset
     """
-    def __init__(self, root_dir, ann_path, tokenizer, npy_dir):
+    def __init__(self, 
+        root_dir, ann_path, 
+        tokenizer, npy_dir,
+        question_path,  class_path = None,):
 
         self.root_dir = root_dir
+        self.question_path = question_path
+        self.class_path = class_path
         self.ann_path = ann_path
         self.npy_dir = npy_dir
         self.tokenizer = tokenizer
-        self.coco = COCO(ann_path)
+        self.coco = VQA(
+            annotation_file=self.ann_path, 
+            question_file=self.question_path,
+            answer_file=class_path)
         self.image_ids = self.coco.getImgIds()
+
+        if class_path is None:
+            self.mapping_classes()
+        else:
+            self.load_mapping(class_path)
 
     def get_feature_dim(self):
         return 2048 # bottom up attention features
 
     def __len__(self):
         return len(self.image_ids)
+
+    def mapping_classes(self):
+        vocab = {}
+        classes_idx = {}
+        idx_classes = {}
+        
+        image_ids = self.coco.getImgIds()
+        for img_id in image_ids:
+            ann_ids = self.coco.getQuesIds(imgIds=img_id)
+            anns = self.coco.loadQA(ann_ids)
+            for ann in anns:
+                ans = ann['answers']
+                for an in ans:
+                    if an['answer'] not in vocab.keys():
+                        vocab[an['answer']] = 0
+                    vocab[an['answer']] += 1
+
+        sorted_vocab = {k: v for k, v in sorted(vocab.items(), key=lambda item: item[1], reverse=True)}
+        sorted_vocab =  {k: v for i, (k, v) in enumerate(sorted_vocab.items()) if i < 3129}
+
+        for i, k in enumerate(sorted_vocab.keys()):
+            classes_idx[k] = i
+            idx_classes[i] = k
+
+        self.num_classes = len(sorted_vocab.keys())
+        self.classes_idx = classes_idx
+        self.idx_classes = idx_classes
+
+    def load_mapping(self, path):
+        with open(path, 'r') as f:
+            lines = f.read()
+            lines = lines.splitlines()
+      
+        classes_idx = {}
+        idx_classes = {}
+        for i, k in enumerate(lines):
+            classes_idx[k] = i
+            idx_classes[i] = k
+
+        self.classes_idx = classes_idx
+        self.idx_classes = idx_classes
+        self.num_classes = len(self.classes_idx)
 
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
@@ -288,30 +343,54 @@ class NumpyFeatureDataset(Dataset):
 
     def load_annotations(self, image_index, return_all=False):
         # get ground truth annotations
-        annotations_ids = self.coco.getAnnIds(imgIds=self.image_ids[image_index])
+
+        annotations_ids = self.coco.getQuesIds(imgIds=self.image_ids[image_index])  
 
         if not return_all:
-            if len(annotations_ids)>1:
-                ann_id = random.choice(annotations_ids)
-            anns = self.coco.loadAnns(ann_id)[0]['caption']
+            ann_id = random.choice(annotations_ids)
+            anns = self.coco.loadQA(ann_id)[0]
+            quesId = anns['question_id']
+            ques = self.coco.qqa[quesId]['question']
+
+            anns = random.choice(anns['answers'])
+            anns = anns['answer']
+          
         else:
-            anns = self.coco.loadAnns(annotations_ids)
-            anns = [i['caption'] for i in anns]
-        return anns
+            annss = self.coco.loadQA(annotations_ids)
+
+            anns = []
+            ques = []
+            for ann in annss:
+                quesId = ann['question_id']
+                question = self.coco.qqa[quesId]['question']
+                an = []
+                for answer in ann['answers']:
+                    an.append(answer['answer'])
+                anns.append(an)
+                ques.append(question)
+
+        return anns, ques
 
     def __getitem__(self, index):
         image_id = self.image_ids[index]
         image_path = self.load_image(index)
-        npy_path, npy_loc_path = self.load_numpy(index)
-        text = self.load_annotations(index)
+        ans, ques = self.load_annotations(index)
+        label = self.classes_idx[ans]
 
         return {
             'image_id': image_id,
-            'npy_path': npy_path,
-            "npy_loc_path": npy_loc_path,
             'image_path': image_path,
-            'text': text,
+            'text': ques,
+            'label': torch.LongTensor([label])
         }
+
+    def load_augment(self, image_path):
+        ori_img = cv2.imread(image_path)
+        ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
+        image = ori_img.astype(np.float32)
+        image /= 255.0
+        image = self.transforms(image=image)['image']
+        return image, ori_img
 
     def collate_fn(self, batch):
         
@@ -319,7 +398,8 @@ class NumpyFeatureDataset(Dataset):
         npy_paths = [s['npy_path'] for s in batch]
         npy_loc_paths = [s['npy_loc_path'] for s in batch]
         image_ids = [s['image_id'] for s in batch]
-        
+        labels = torch.stack([s['label'] for s in batch])
+
         image_names = []
         ori_imgs = []
         for image_path in image_paths:
@@ -351,12 +431,9 @@ class NumpyFeatureDataset(Dataset):
         tokens = self.tokenizer(texts, truncation=True)
         tokens = [np.array(i) for i in tokens['input_ids']]
 
-        texts_ = make_feature_batch(
+        texts_inp = make_feature_batch(
             tokens, pad_token=self.tokenizer.pad_token_id)
         
-        texts_inp = texts_[:, :-1]
-        texts_res = texts_[:, 1:]
-
         text_masks = create_masks(
             texts_inp,
             pad_token=self.tokenizer.pad_token_id, 
@@ -370,14 +447,13 @@ class NumpyFeatureDataset(Dataset):
             'ori_imgs': ori_imgs,
             'feats': feats,
             'loc_feats': loc_feats,
+            'targets': labels.squeeze().long(),
             'image_masks': image_masks.long(),
             'tgt_texts_raw': texts,
             'texts_inp': texts_inp.long(),
-            'texts_res': texts_res.long(),
             'text_masks': text_masks.long(),
         }
 
     def __str__(self): 
         s1 = "Number of images: " + str(len(self.image_ids)) + '\n'
-        s2 = "Number of texts: " + str(len(self.coco.getAnnIds())) + '\n'
-        return s1 + s2
+        return s1

@@ -82,12 +82,14 @@ class NumpyFeatureLoader(BucketIterator):
                 root_dir,
                 npy_dir, 
                 ann_path, 
+                question_path,
+                class_path,
                 tokenizer,
                 device,
                 **kwargs):
        
         self.dataset = NumpyFeatureDataset(
-            root_dir, ann_path, tokenizer, npy_dir)
+            root_dir, ann_path, tokenizer, npy_dir, question_path, class_path)
 
         self.tokenizer = self.dataset.tokenizer
         self.collate_fn = self.dataset.collate_fn
@@ -111,11 +113,13 @@ class RawNumpyFeatureLoader(DataLoader):
                 root_dir,
                 npy_dir, 
                 ann_path, 
+                question_path,
+                class_path,
                 tokenizer,
                 **kwargs):
        
         self.dataset = NumpyFeatureDataset(
-            root_dir, ann_path, tokenizer, npy_dir)
+            root_dir, ann_path, tokenizer, npy_dir, question_path, class_path)
 
         self.tokenizer = self.dataset.tokenizer
         self.collate_fn = self.dataset.collate_fn
