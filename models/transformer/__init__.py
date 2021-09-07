@@ -24,34 +24,6 @@ def get_pretrained_encoder(model_name):
     model = timm.create_model(model_name, pretrained=True)
     return model
 
-class Encoder(nn.Module):
-    """
-    Core encoder is a stack of N EncoderLayers
-    :input:
-        patches_dim:    size of patches
-        d_model:        embeddings dim
-        d_ff:           feed-forward dim
-        N:              number of layers
-        heads:          number of attetion heads
-        dropout:        dropout rate
-    :output:
-        encoded embeddings shape [batch * input length * model_dim]
-    """
-    def __init__(self, patch_size, d_model, d_ff, N, heads, dropout, num_channels=3):
-        super().__init__()
-        self.N = N
-        self.embed = PatchEmbedding(patch_size=patch_size, in_chans=num_channels, embed_dim=d_model)
-        self.pe = PositionalEncoding(d_model, dropout_rate=dropout)
-        self.layers = get_clones(EncoderLayer(d_model, d_ff, heads, dropout), N)
-        self.norm = LayerNorm(d_model)    
-    def forward(self, src):
-        x = self.embed(src)
-        x = self.pe(x)
-        for i in range(self.N):
-            x = self.layers[i](x, mask=None)
-        x = self.norm(x)
-        return x
-
 class EncoderVIT(nn.Module):
     """
     Pretrained Transformers Encoder from timm Vision Transformers
@@ -146,25 +118,19 @@ class Transformer(nn.Module):
     :output:
         next words probability shape [batch * input length * vocab_dim]
     """
-    def __init__(self, trg_vocab, patch_size=16, d_model=768, d_ff=3072, N_enc=12, N_dec=4, heads=12, dropout=0.2, num_channels=3, pretrained_encoder=True):
+    def __init__(self, trg_vocab, num_classes, d_ff=3072, N_dec=4, heads=12, dropout=0.2):
         super().__init__()
         self.name = "Transformer"
 
-        if pretrained_encoder:
-            self.encoder = EncoderVIT()
-            # Override decoder hidden dim if use pretrained encoder
-            d_model = self.encoder.embed_dim
-        else:
-            self.encoder = Encoder(patch_size, d_model, d_ff, N_enc, heads, dropout, num_channels=num_channels)
+        # Override decoder hidden dim if use pretrained encoder
+        self.encoder = EncoderVIT()
+        d_model = self.encoder.embed_dim
 
         self.decoder = Decoder(trg_vocab, d_model, d_ff, N_dec, heads, dropout)
-        self.out = nn.Linear(d_model, trg_vocab)
+        self.out = nn.Linear(d_model, num_classes)
 
-        if pretrained_encoder:
-            init_xavier(self.decoder)
-            init_xavier(self.out)
-        else:
-            init_xavier(self)
+        init_xavier(self.decoder)
+        init_xavier(self.out)
 
     def forward(self, src, trg, src_mask, trg_mask, *args, **kwargs):
         e_outputs = self.encoder(src)
@@ -172,38 +138,6 @@ class Transformer(nn.Module):
         output = self.out(d_output)
         return output
         
-    def predict(
-        self, src_inputs, src_masks, 
-        tokenizer, max_len=None, 
-        top_k = 5, top_p=0.9, temperature = 0.9,
-        *args, **kwargs):
-
-        """
-        Inference step
-        """
-
-        if max_len is None:
-            max_len = src_inputs.shape[-1]
-
-        # sampling_search, beam_search
-        # outputs = sampling_search(
-        #     self, 
-        #     src=src_inputs, 
-        #     src_mask=src_masks, 
-        #     max_len=max_len, 
-        #     top_k = top_k, top_p=top_p, 
-        #     temperature = temperature,
-        #     tokenizer=tokenizer)
-
-        outputs = beam_search(
-            self, 
-            src=src_inputs, 
-            src_mask=src_masks,
-            tokenizer=tokenizer, 
-            max_len=max_len, k=3, alpha=0.7)
-
-        return outputs
-
 class TransformerBottomUp(nn.Module):
     """
     Transformer model
@@ -218,13 +152,13 @@ class TransformerBottomUp(nn.Module):
     :output:
         next words probability shape [batch * input length * vocab_dim]
     """
-    def __init__(self, trg_vocab, feat_dim, d_model=768, d_ff=3072, N_enc=12, N_dec=4, heads=12, dropout=0.2):
+    def __init__(self, trg_vocab, feat_dim, num_classes, d_model=768, d_ff=3072, N_enc=12, N_dec=4, heads=12, dropout=0.2):
         super().__init__()
         self.name = "TransformerBottomUp"
 
         self.encoder = EncoderBottomUp(feat_dim, d_model, d_ff, N_enc, heads, dropout)
         self.decoder = Decoder(trg_vocab, d_model, d_ff, N_dec, heads, dropout)
-        self.out = nn.Linear(d_model, trg_vocab)
+        self.out = nn.Linear(d_model, num_classes)
         init_xavier(self)
 
     def forward(self, src, loc_src, trg, src_mask, trg_mask, *args, **kwargs):
@@ -232,26 +166,3 @@ class TransformerBottomUp(nn.Module):
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask)
         output = self.out(d_output)
         return output
-        
-    def predict(
-        self, src_inputs, src_loc, src_masks, 
-        tokenizer, max_len=None, 
-        top_k = 5, top_p=0.9, temperature = 0.9,
-        *args, **kwargs):
-
-        """
-        Inference step
-        """
-
-        if max_len is None:
-            max_len = src_inputs.shape[-1]
-
-        outputs = beam_search(
-            self, 
-            src=src_inputs, 
-            src_loc=src_loc,
-            src_mask=src_masks,
-            tokenizer=tokenizer, 
-            max_len=max_len, k=3, alpha=0.7)
-
-        return outputs
