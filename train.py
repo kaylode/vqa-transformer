@@ -27,20 +27,21 @@ def train(args, config):
     if args.bottom_up:
         net = get_transformer_bottomup_model(
             bottom_up_dim=trainset.get_feature_dim(),
-            trg_vocab=trainset.tokenizer.vocab_size)
+            trg_vocab=trainset.tokenizer.vocab_size,
+            num_classes=trainset.num_classes)
     else:
         net = get_transformer_model(
-            trg_vocab=trainset.tokenizer.vocab_size)
+            trg_vocab=trainset.tokenizer.vocab_size, 
+            num_classes=trainset.num_classes)
 
     optimizer, optimizer_params = get_lr_policy(config.lr_policy)
 
-    criterion = nn.CrossEntropyLoss(
-            ignore_index=trainset.tokenizer.pad_token_id)
+    criterion = nn.CrossEntropyLoss()
 
     model = Captioning(
             model = net,
             criterion=criterion,
-            metrics=NLPMetrics(valloader, metrics_list=['bleu', "meteor", 'rouge', 'cider', 'spice']),
+            # metrics=NLPMetrics(valloader, metrics_list=['bleu', "meteor", 'rouge', 'cider', 'spice']),
             scaler=NativeScaler(),
             optimizer= optimizer,
             optim_params = optimizer_params,     
