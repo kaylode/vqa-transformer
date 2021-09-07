@@ -39,7 +39,7 @@ class Captioning(BaseModel):
             loc_src_inputs = None
         src_masks = batch['image_masks'].unsqueeze(-2).to(self.device)
         tgt_inputs = batch['texts_inp'].to(self.device)
-        tgt_targets = batch['texts_res'].to(self.device)
+        targets = batch['targets'].to(self.device)
         tgt_masks = batch['text_masks'].to(self.device)
 
         outputs = self.model(
@@ -51,7 +51,7 @@ class Captioning(BaseModel):
 
         loss = self.criterion(
                 outputs.contiguous().view(-1, outputs.size(-1)), 
-                tgt_targets.contiguous().view(-1))
+                targets.contiguous().view(-1))
 
         loss_dict = {'T': loss.item()}
         return loss, loss_dict
@@ -87,7 +87,7 @@ class Captioning(BaseModel):
 
         src_masks = batch['image_masks'].unsqueeze(-2).to(self.device)
         tgt_inputs = batch['texts_inp'].to(self.device)
-        tgt_targets = batch['texts_res'].to(self.device)
+        targets = batch['targets'].to(self.device)
         tgt_masks = batch['text_masks'].to(self.device)
 
         outputs = self.model(
@@ -99,7 +99,7 @@ class Captioning(BaseModel):
 
         loss = self.criterion(
                 outputs.contiguous().view(-1, outputs.size(-1)), 
-                tgt_targets.contiguous().view(-1))
+                targets.contiguous().view(-1))
 
         loss_dict = {'T': loss.item()}
 
