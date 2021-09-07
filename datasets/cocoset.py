@@ -1,9 +1,12 @@
+import sys
+sys.path.insert(0, '../metrics/vqaeval')
+from vqa import VQA
+
 import os
 import cv2
 import torch
 import random
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 import albumentations as A
@@ -22,13 +25,16 @@ class CocoDataset(Dataset):
     """
     def __init__(self, 
             root_dir, ann_path, 
-            tokenizer, image_size=[512,512], 
+            question_path, tokenizer, 
+            class_path = None,
+            image_size=[224,224], 
             keep_ratio=False,
             type='train'):
 
         self.patch_size = 16
         self.root_dir = root_dir
         self.ann_path = ann_path
+        self.question_path = question_path
         self.image_size = image_size
 
         self.tokenizer = tokenizer
@@ -37,11 +43,62 @@ class CocoDataset(Dataset):
             get_augmentation(_type=type)
         ])
 
-        self.coco = COCO(ann_path)
+        self.coco = VQA(
+            annotation_file=self.ann_path, 
+            question_file=self.question_path,
+            answer_file=class_path)
+        
         self.image_ids = self.coco.getImgIds()
+
+        if class_path is None:
+            self.mapping_classes()
+        else:
+            self.load_mapping(class_path)
 
     def __len__(self):
         return len(self.image_ids)
+
+    def mapping_classes(self):
+        vocab = {}
+        classes_idx = {}
+        idx_classes = {}
+        
+        image_ids = self.coco.getImgIds()
+        for img_id in image_ids:
+            ann_ids = self.coco.getQuesIds(imgIds=img_id)
+            anns = self.coco.loadQA(ann_ids)
+            for ann in anns:
+                ans = ann['answers']
+                for an in ans:
+                    if an['answer'] not in vocab.keys():
+                        vocab[an['answer']] = 0
+                    vocab[an['answer']] += 1
+
+        sorted_vocab = {k: v for k, v in sorted(vocab.items(), key=lambda item: item[1], reverse=True)}
+        sorted_vocab =  {k: v for i, (k, v) in enumerate(sorted_vocab.items()) if i < 3129}
+
+        for i, k in enumerate(sorted_vocab.keys()):
+            classes_idx[k] = i
+            idx_classes[i] = k
+
+        self.num_classes = len(sorted_vocab.keys())
+        self.classes_idx = classes_idx
+        self.idx_classes = idx_classes
+
+    def load_mapping(self, path):
+        with open(path, 'r') as f:
+            lines = f.read()
+            lines = lines.splitlines()
+      
+        classes_idx = {}
+        idx_classes = {}
+        for i, k in enumerate(lines):
+            classes_idx[k] = i
+            idx_classes[i] = k
+
+        self.classes_idx = classes_idx
+        self.idx_classes = idx_classes
+        self.num_classes = len(self.classes_idx)
 
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
@@ -50,26 +107,46 @@ class CocoDataset(Dataset):
 
     def load_annotations(self, image_index, return_all=False):
         # get ground truth annotations
-        annotations_ids = self.coco.getAnnIds(imgIds=self.image_ids[image_index])
+
+        annotations_ids = self.coco.getQuesIds(imgIds=self.image_ids[image_index])  
 
         if not return_all:
             if len(annotations_ids)>1:
                 ann_id = random.choice(annotations_ids)
-            anns = self.coco.loadAnns(ann_id)[0]['caption']
+            anns = self.coco.loadQA(ann_id)[0]
+            quesId = anns['question_id']
+            ques = self.coco.qqa[quesId]['question']
+
+            anns = random.choice(anns['answers'])
+            anns = anns['answer']
+          
         else:
-            anns = self.coco.loadAnns(annotations_ids)
-            anns = [i['caption'] for i in anns]
-        return anns
+            annss = self.coco.loadQA(annotations_ids)
+
+            anns = []
+            ques = []
+            for ann in annss:
+                quesId = ann['question_id']
+                question = self.coco.qqa[quesId]['question']
+                an = []
+                for answer in ann['answers']:
+                    an.append(answer['answer'])
+                anns.append(an)
+                ques.append(question)
+
+        return anns, ques
 
     def __getitem__(self, index):
         image_id = self.image_ids[index]
         image_path = self.load_image(index)
-        text = self.load_annotations(index)
+        ans, ques = self.load_annotations(index)
+        label = self.classes_idx[ans]
 
         return {
             'image_id': image_id,
             'image_path': image_path,
-            'text': text,
+            'text': ques,
+            'label': torch.LongTensor([label])
         }
 
     def load_augment(self, image_path):
@@ -84,6 +161,7 @@ class CocoDataset(Dataset):
         
         image_paths = [s['image_path'] for s in batch]
         image_ids = [s['image_id'] for s in batch]
+        labels = torch.stack([s['label'] for s in batch])
         
         image_names = []
         ori_imgs = []
@@ -104,11 +182,9 @@ class CocoDataset(Dataset):
         tokens = self.tokenizer(texts, truncation=True)
         tokens = [np.array(i) for i in tokens['input_ids']]
 
-        texts_ = make_feature_batch(
+        texts_inp = make_feature_batch(
             tokens, pad_token=self.tokenizer.pad_token_id)
         
-        texts_inp = texts_[:, :-1]
-        texts_res = texts_[:, 1:]
 
         text_masks = create_masks(
             texts_inp,
@@ -119,13 +195,13 @@ class CocoDataset(Dataset):
 
         return {
             'image_ids': image_ids,
+            'targets': labels.squeeze().long(),
             'image_names': image_names,
             'ori_imgs': ori_imgs,
             'image_patches': feats,
             'image_masks': image_masks.long(),
             'tgt_texts_raw': texts,
             'texts_inp': texts_inp.long(),
-            'texts_res': texts_res.long(),
             'text_masks': text_masks.long(),
         }
 
@@ -141,7 +217,7 @@ class CocoDataset(Dataset):
         image_name = os.path.basename(image_path)
         image, _ = self.load_augment(image_path)
 
-        texts = self.load_annotations(index, return_all=True)
+        ans, ques = self.load_annotations(index, return_all=True)
         
         normalize = False
         if self.transforms is not None:
@@ -154,16 +230,22 @@ class CocoDataset(Dataset):
         if normalize:
             image = denormalize(img = image)
 
-        self.visualize(image, texts, figsize = figsize, img_name= image_name)
+        self.visualize(image, ans, ques, figsize = figsize, img_name= image_name)
 
-    def visualize(self, img, texts, figsize=(15,15), img_name=None):
+    def visualize(self, img, answers, questions, figsize=(15,15), img_name=None):
         """
         Visualize an image with its captions
         """
 
         text = []
-        for i, t in enumerate(texts):
-            text.append(f"{i+1}. {t}")
+
+        for question, answer in zip(questions, answers):
+            text2 = []
+            for i, ans in enumerate(answer):
+                text2.append(f"{ans}")
+            text2 = "-".join(text2)
+            text2 = f"{question} " + text2
+            text.append(text2)
         text = "\n".join(text)
         fig = draw_image_caption(img, text, figsize=figsize)
 
@@ -171,46 +253,9 @@ class CocoDataset(Dataset):
             plt.title(img_name)
         plt.show()
 
-    def count_dict(self, types = 1):
-        """
-        Count text length frequencies
-        """
-        cnt_dict = {}
-        if types == 1: # Text length Frequencies
-            for image_id in range(len(self.image_ids)):
-                texts = self.load_annotations(image_id, return_all=True)
-                for text in texts:
-                    text_length = len(text)
-                    if text_length not in cnt_dict.keys():
-                        cnt_dict[text_length] = 0
-                    cnt_dict[text_length] += 1
-        
-        return cnt_dict
-
-    def plot(self, figsize = (8,8), types = ["length"]):
-        """
-        Plot distribution
-        """
-        ax = plt.figure(figsize = figsize)
-        num_plots = len(types)
-        plot_idx = 1
-
-        if "length" in types:
-            ax.add_subplot(num_plots, 1, plot_idx)
-            plot_idx +=1
-            cnt_dict = self.count_dict(types = 1)
-            plt.title("Total texts: "+ str(sum(list(cnt_dict.values()))))
-            bar1 = plt.bar(list(cnt_dict.keys()), list(cnt_dict.values()), color=[np.random.rand(3,) for i in range(len(cnt_dict.keys()))])
-            for rect in bar1:
-                height = rect.get_height()
-                plt.text(rect.get_x() + rect.get_width()/2.0, height, '%d' % int(height), ha='center', va='bottom')
-        
-        plt.show()
-
     def __str__(self): 
         s1 = "Number of images: " + str(len(self.image_ids)) + '\n'
-        s2 = "Number of texts: " + str(len(self.coco.getAnnIds())) + '\n'
-        return s1 + s2
+        return s1
 
 class NumpyFeatureDataset(Dataset):
     """

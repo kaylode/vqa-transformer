@@ -11,6 +11,8 @@ class EqualLengthTextLoader(BucketIterator):
                 batch_size,
                 root_dir,
                 ann_path,
+                question_path,
+                class_path,
                 tokenizer,
                 image_size,
                 keep_ratio,
@@ -20,8 +22,10 @@ class EqualLengthTextLoader(BucketIterator):
        
         self.dataset = CocoDataset(
                 root_dir=root_dir, ann_path=ann_path, 
+                question_path=question_path, class_path=class_path,
                 tokenizer=tokenizer, image_size=image_size, 
                 keep_ratio=keep_ratio, type=type)
+        
 
         self.tokenizer = self.dataset.tokenizer
         self.collate_fn = self.dataset.collate_fn
@@ -45,6 +49,8 @@ class RawTextLoader(DataLoader):
                 batch_size,
                 root_dir,
                 ann_path,
+                question_path,
+                class_path,
                 tokenizer,
                 image_size,
                 keep_ratio,
@@ -53,6 +59,7 @@ class RawTextLoader(DataLoader):
        
         self.dataset = CocoDataset(
                 root_dir=root_dir, ann_path=ann_path, 
+                question_path=question_path, class_path=class_path,
                 tokenizer=tokenizer, image_size=image_size, 
                 keep_ratio=keep_ratio,type=type)
 
