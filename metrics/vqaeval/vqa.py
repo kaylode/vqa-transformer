@@ -59,8 +59,9 @@ class VQA:
 			qqa[ques['question_id']] = ques
 
 		imgs = {}
-		for img in self.dataset['images']:
-			imgs[img['id']] = img
+		if 'images' in self.dataset.keys():
+			for img in self.dataset['images']:
+				imgs[img['id']] = img
 
 		print('index created!')
 
