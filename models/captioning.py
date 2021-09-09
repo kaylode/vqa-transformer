@@ -1,4 +1,4 @@
-from numpy.lib.arraysetops import isin
+import torch
 from .base_model import BaseModel
 from .transformer import Transformer, TransformerBottomUp
 
@@ -56,7 +56,7 @@ class Captioning(BaseModel):
         loss_dict = {'T': loss.item()}
         return loss, loss_dict
 
-    def inference_step(self, batch, tgt_tokenizer):
+    def inference_step(self, batch, return_probs=False):
         
         if self.bottom_up:
             src_inputs = batch['feats'].to(self.device)
@@ -64,17 +64,26 @@ class Captioning(BaseModel):
         else:
             src_inputs = batch['image_patches'].to(self.device)
             loc_src_inputs = None
-            
         src_masks = batch['image_masks'].unsqueeze(-2).to(self.device)
+        tgt_inputs = batch['texts_inp'].to(self.device)
+        tgt_masks = batch['text_masks'].to(self.device)
 
-        outputs = self.model.predict(
-            src_inputs = src_inputs,
-            src_loc = loc_src_inputs,
-            src_masks = src_masks, 
-            tokenizer = tgt_tokenizer,
-            max_len=64)
+        outputs = self.model(
+            src = src_inputs, 
+            loc_src = loc_src_inputs,
+            trg = tgt_inputs, 
+            src_mask = src_masks, 
+            trg_mask = tgt_masks)
+            
+        preds = torch.argmax(outputs, dim=1)
+        preds = preds.detach()
 
-        return outputs  
+        if return_probs:
+            probs = torch.nn.functional.softmax(outputs, dim=1)
+            probs, _ = torch.max(probs, dim=1)
+            return preds.cpu().numpy(), probs.cpu().numpy()
+        else:
+            return preds.numpy()
 
     def evaluate_step(self, batch):
 
