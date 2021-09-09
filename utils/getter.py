@@ -5,6 +5,7 @@ from trainer import *
 from augmentations import *
 from loggers import *
 from configs import *
+from losses import *
 
 import os
 import cv2

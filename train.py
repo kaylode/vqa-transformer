@@ -36,7 +36,7 @@ def train(args, config):
 
     optimizer, optimizer_params = get_lr_policy(config.lr_policy)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = LabelSmoothing(smoothing=0.3)
 
     model = Captioning(
             model = net,

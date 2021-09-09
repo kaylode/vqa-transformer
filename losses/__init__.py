@@ -1,0 +1,1 @@
+from .soft_ce import LabelSmoothing
