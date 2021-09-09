@@ -263,7 +263,7 @@ class NumpyFeatureDataset(Dataset):
     def __init__(self, 
         root_dir, ann_path, 
         tokenizer, npy_dir,
-        question_path,  class_path = None,):
+        question_path,  class_path = None):
 
         self.root_dir = root_dir
         self.question_path = question_path
@@ -337,8 +337,8 @@ class NumpyFeatureDataset(Dataset):
 
     def load_numpy(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
-        npy_path = os.path.join(self.npy_dir, image_info['file_name'][:-4]+'.npz')
-        npy_loc_path = os.path.join(self.npy_dir, image_info['file_name'][:-4]+'_loc.npz')
+        npy_path = os.path.join(self.npy_dir+'_att', image_info['id']+'.npz')
+        npy_loc_path = os.path.join(self.npy_dir+'_box', image_info['id']+'.npz')
         return npy_path, npy_loc_path
 
     def load_annotations(self, image_index, return_all=False):
@@ -413,8 +413,8 @@ class NumpyFeatureDataset(Dataset):
         npy_feats = []
         npy_loc_feats = []
         for npy_path, npy_loc_path in zip(npy_paths, npy_loc_paths):
-            npy_feat = np.load(npy_path, mmap_mode='r')['arr_0']
-            npy_loc_feat = np.load(npy_loc_path, mmap_mode='r')['arr_0']
+            npy_feat = np.load(npy_path, mmap_mode='r')['feat']
+            npy_loc_feat = np.load(npy_loc_path, mmap_mode='r')['feat']
             npy_feats.append(npy_feat)
             npy_loc_feats.append(npy_loc_feat)
 
