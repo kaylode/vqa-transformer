@@ -88,9 +88,12 @@ class SpatialEncoding(nn.Module):
     as vector of dimensionality `embed_dim`.
     """
 
-    def __init__(self, embed_dim):
+    def __init__(self, embed_dim, has_label_index=False):
         super().__init__()
-        self.linear = nn.Linear(5, embed_dim)
+        if has_label_index:
+            self.linear = nn.Linear(5, embed_dim)
+        else:
+            self.linear = nn.Linear(4, embed_dim)
 
     def forward(self, x):
         return self.linear(x)
