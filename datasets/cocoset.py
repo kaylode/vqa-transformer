@@ -36,6 +36,7 @@ class CocoDataset(Dataset):
         self.ann_path = ann_path
         self.question_path = question_path
         self.image_size = image_size
+        self.type = type
 
         self.tokenizer = tokenizer
         self.transforms = A.Compose([
@@ -131,14 +132,20 @@ class CocoDataset(Dataset):
                 for answer in ann['answers']:
                     an.append(answer['answer'])
                 anns.append(an)
-                ques.append(question)
+                ques.append({
+                    'quesid': quesId,
+                    'text':question
+                })
 
         return anns, ques
 
     def __getitem__(self, index):
         image_id = self.image_ids[index]
         image_path = self.load_image(index)
-        ans, ques = self.load_annotations(index)
+        if self.type == 'train':
+            ans, ques = self.load_annotations(index)
+        if self.type == 'val':
+            ans, ques = self.load_annotations(index, return_all=True)
         label = self.classes_idx[ans]
 
         return {
@@ -243,7 +250,7 @@ class CocoDataset(Dataset):
             for i, ans in enumerate(answer):
                 text2.append(f"{ans}")
             text2 = "-".join(text2)
-            text2 = f"{question} " + text2
+            text2 = f"{question['text']} " + text2
             text.append(text2)
         text = "\n".join(text)
         fig = draw_image_caption(img, text, figsize=figsize)
