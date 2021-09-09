@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '../metrics/vqaeval')
+sys.path.insert(0, './metrics/vqaeval')
 from vqa import VQA
 
 import os
