@@ -2,19 +2,20 @@ settings:
   #################   DATASET CONFIG   ###################
 
   project_name: "vqa"    
-  image_path: 
-  train_anns:
-  val_anns:
-  train_question:
-  val_question:
-  class_path:
+  train_imgs: "/content/data/train2014"
+  val_imgs: "/content/data/val2014"
+  train_anns: "/content/data/VQAv2/v2_coco_train2014_annotations.json"
+  val_anns: "/content/data/VQAv2/v2_coco_val2014_annotations.json"
+  train_question: "/content/data/VQAv2/v2_OpenEnded_mscoco_train2014_questions.json"
+  val_question: "/content/data/VQAv2/v2_OpenEnded_mscoco_val2014_questions.json"
+  class_path: "/content/data/VQAv2/3klabel.txt"
   npy_dir:
 
   #################   TRAINING CONFIG   ###################
   
   model_name:  'catr' 
   language:    'bert-base-uncased'
-  image_size:   [384,384]               # 224 or 384 (pretrained vit support these only)
+  image_size:   [224,224]               # 224 or 384 (pretrained vit support these only)
   keep_ratio:   False
 
   gpu_devices: '0'                     # supports multi-gpus
