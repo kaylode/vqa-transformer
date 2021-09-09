@@ -382,11 +382,14 @@ class NumpyFeatureDataset(Dataset):
         image_id = self.image_ids[index]
         image_path = self.load_image(index)
         ans, ques = self.load_annotations(index)
+        npy_path, npy_loc_path = self.load_numpy(index)
         label = self.classes_idx[ans]
 
         return {
             'image_id': image_id,
             'image_path': image_path,
+            'npy_path': npy_path,
+            'npy_loc_path': npy_loc_path,
             'text': ques,
             'label': torch.LongTensor([label])
         }
