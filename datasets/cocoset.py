@@ -382,12 +382,13 @@ class NumpyFeatureDataset(Dataset):
     def __getitem__(self, index):
         image_id = self.image_ids[index]
         image_path = self.load_image(index)
-        ans, ques = self.load_annotations(index)
+        ans, ques, quesId = self.load_annotations(index)
         npy_path, npy_loc_path = self.load_numpy(index)
         label = self.classes_idx[ans]
 
         return {
             'image_id': image_id,
+            'question_id': quesId,
             'image_path': image_path,
             'npy_path': npy_path,
             'npy_loc_path': npy_loc_path,
@@ -409,6 +410,7 @@ class NumpyFeatureDataset(Dataset):
         npy_paths = [s['npy_path'] for s in batch]
         npy_loc_paths = [s['npy_loc_path'] for s in batch]
         image_ids = [s['image_id'] for s in batch]
+        question_ids = [s['question_id'] for s in batch]
         labels = torch.stack([s['label'] for s in batch])
 
         image_names = []
@@ -454,6 +456,7 @@ class NumpyFeatureDataset(Dataset):
 
         return {
             'image_ids': image_ids,
+            'question_ids': question_ids,
             'image_names': image_names,
             'ori_imgs': ori_imgs,
             'feats': feats,
