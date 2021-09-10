@@ -345,8 +345,8 @@ class NumpyFeatureDataset(Dataset):
 
     def load_numpy(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
-        npy_path = os.path.join(self.npy_dir,'data_att', image_info['id']+'.npz')
-        npy_loc_path = os.path.join(self.npy_dir,'data_box', image_info['id']+'.npz')
+        npy_path = os.path.join(self.npy_dir,'data_att', str(image_info['id'])+'.npz')
+        npy_loc_path = os.path.join(self.npy_dir,'data_box', str(image_info['id'])+'.npz')
         return npy_path, npy_loc_path
 
     def load_annotations(self, image_index, return_all=False):
@@ -368,6 +368,7 @@ class NumpyFeatureDataset(Dataset):
 
             anns = []
             ques = []
+            quesIds = []
             for ann in annss:
                 quesId = ann['question_id']
                 question = self.coco.qqa[quesId]['question']
@@ -376,12 +377,13 @@ class NumpyFeatureDataset(Dataset):
                     an.append(answer['answer'])
                 anns.append(an)
                 ques.append(question)
+                quesIds.append(quesId)
 
-        return anns, ques
+        return anns, ques, quesId
 
     def __getitem__(self, index):
         image_id = self.image_ids[index]
-        image_path = self.load_image(index)
+        # image_path = self.load_image(index)
         ans, ques, quesId = self.load_annotations(index)
         npy_path, npy_loc_path = self.load_numpy(index)
         label = self.classes_idx[ans]
@@ -389,7 +391,7 @@ class NumpyFeatureDataset(Dataset):
         return {
             'image_id': image_id,
             'question_id': quesId,
-            'image_path': image_path,
+            'image_path': None,
             'npy_path': npy_path,
             'npy_loc_path': npy_loc_path,
             'text': ques,
@@ -413,15 +415,15 @@ class NumpyFeatureDataset(Dataset):
         question_ids = [s['question_id'] for s in batch]
         labels = torch.stack([s['label'] for s in batch])
 
-        image_names = []
-        ori_imgs = []
-        for image_path in image_paths:
-            image_names.append(os.path.basename(image_path))
+        # image_names = []
+        # ori_imgs = []
+        # for image_path in image_paths:
+        #     image_names.append(os.path.basename(image_path))
 
-        for image_path in image_paths:
-            ori_img = cv2.imread(image_path)
-            ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
-            ori_imgs.append(ori_img)
+        # for image_path in image_paths:
+        #     ori_img = cv2.imread(image_path)
+        #     ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
+        #     ori_imgs.append(ori_img)
         
         npy_feats = []
         npy_loc_feats = []
@@ -457,8 +459,8 @@ class NumpyFeatureDataset(Dataset):
         return {
             'image_ids': image_ids,
             'question_ids': question_ids,
-            'image_names': image_names,
-            'ori_imgs': ori_imgs,
+            'image_names': None,
+            'ori_imgs': None,
             'feats': feats,
             'loc_feats': loc_feats,
             'targets': labels.squeeze().long(),
