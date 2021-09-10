@@ -104,7 +104,10 @@ class NLPMetrics(TemplateMetric):
     def value(self):
         self.compute()
         stats = _eval(
-            self.gt_filepath, self.filepath, None, self.metrics_list)
+            self.gt_ans_filepath, 
+            self.gt_ques_filepath,
+            self.filepath,
+            self.class_filepath)
         
         return stats
 
