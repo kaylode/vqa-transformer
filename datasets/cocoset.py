@@ -345,8 +345,8 @@ class NumpyFeatureDataset(Dataset):
 
     def load_numpy(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
-        npy_path = os.path.join(self.npy_dir+'_att', image_info['id']+'.npz')
-        npy_loc_path = os.path.join(self.npy_dir+'_box', image_info['id']+'.npz')
+        npy_path = os.path.join(self.npy_dir,'data_att', image_info['id']+'.npz')
+        npy_loc_path = os.path.join(self.npy_dir,'data_box', image_info['id']+'.npz')
         return npy_path, npy_loc_path
 
     def load_annotations(self, image_index, return_all=False):
