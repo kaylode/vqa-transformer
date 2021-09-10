@@ -473,3 +473,189 @@ class NumpyFeatureDataset(Dataset):
     def __str__(self): 
         s1 = "Number of images: " + str(len(self.image_ids)) + '\n'
         return s1
+
+
+class ValNumpyFeatureDataset(Dataset):
+    """
+    Coco dataset
+    """
+    def __init__(self, 
+        root_dir, ann_path, 
+        tokenizer, npy_dir,
+        question_path,  class_path = None):
+
+        self.root_dir = root_dir
+        self.question_path = question_path
+        self.class_path = class_path
+        self.ann_path = ann_path
+        self.npy_dir = npy_dir
+        self.tokenizer = tokenizer
+        self.coco = VQA(
+            annotation_file=self.ann_path, 
+            question_file=self.question_path,
+            answer_file=class_path)
+        self.image_ids = self.coco.getImgIds()
+        self.question_ids = self.coco.getQuesIds()
+
+        if class_path is None:
+            self.mapping_classes()
+        else:
+            self.load_mapping(class_path)
+
+    def get_feature_dim(self):
+        return 2048 # bottom up attention features
+
+    def __len__(self):
+        return len(self.question_ids)
+
+    def mapping_classes(self):
+        vocab = {}
+        classes_idx = {}
+        idx_classes = {}
+        
+        image_ids = self.coco.getImgIds()
+        for img_id in image_ids:
+            ann_ids = self.coco.getQuesIds(imgIds=img_id)
+            anns = self.coco.loadQA(ann_ids)
+            for ann in anns:
+                ans = ann['answers']
+                for an in ans:
+                    if an['answer'] not in vocab.keys():
+                        vocab[an['answer']] = 0
+                    vocab[an['answer']] += 1
+
+        sorted_vocab = {k: v for k, v in sorted(vocab.items(), key=lambda item: item[1], reverse=True)}
+        sorted_vocab =  {k: v for i, (k, v) in enumerate(sorted_vocab.items()) if i < 3129}
+
+        for i, k in enumerate(sorted_vocab.keys()):
+            classes_idx[k] = i
+            idx_classes[i] = k
+
+        self.num_classes = len(sorted_vocab.keys())
+        self.classes_idx = classes_idx
+        self.idx_classes = idx_classes
+
+    def load_mapping(self, path):
+        with open(path, 'r') as f:
+            lines = f.read()
+            lines = lines.splitlines()
+      
+        classes_idx = {}
+        idx_classes = {}
+        for i, k in enumerate(lines):
+            classes_idx[k] = i
+            idx_classes[i] = k
+
+        self.classes_idx = classes_idx
+        self.idx_classes = idx_classes
+        self.num_classes = len(self.classes_idx)
+
+    def load_image(self, question_index):
+        image_id = self.coco.getImgIds(quesIds=self.question_ids[question_index])
+        image_info = self.coco.loadImgs(image_id)[0]
+        image_path = os.path.join(self.root_dir, image_info['file_name'])
+        return image_path
+
+    def load_numpy(self, question_index):
+        image_id = self.coco.getImgIds(quesIds=self.question_ids[question_index])
+        image_info = self.coco.loadImgs(image_id)[0]
+        npy_path = os.path.join(self.npy_dir,'data_att', str(image_info['id'])+'.npz')
+        npy_loc_path = os.path.join(self.npy_dir,'data_box', str(image_info['id'])+'.npz')
+        return npy_path, npy_loc_path
+
+    def load_annotations(self, question_index):
+        # get ground truth annotations
+
+        quesId = self.question_ids[question_index]
+        anns = self.coco.loadQA(quesId)[0]
+
+        ques = self.coco.qqa[quesId]['question']
+        anns = [i['answer'] for i in anns['answers']]
+          
+        return anns, ques
+
+    def __getitem__(self, index):
+        image_id = self.coco.getImgIds(quesIds=self.question_ids[index])[0]
+        quesId = self.question_ids[index]
+        image_path = self.load_image(index)
+        ans, ques = self.load_annotations(index)
+        npy_path, npy_loc_path = self.load_numpy(index)
+        label = self.classes_idx[ans]
+
+        return {
+            'image_id': image_id,
+            'question_id': quesId,
+            'image_path': image_path,
+            'npy_path': npy_path,
+            'npy_loc_path': npy_loc_path,
+            'text': ques,
+            'label': torch.LongTensor([label])
+        }
+
+    def collate_fn(self, batch):
+        
+        image_paths = [s['image_path'] for s in batch]
+        npy_paths = [s['npy_path'] for s in batch]
+        npy_loc_paths = [s['npy_loc_path'] for s in batch]
+        image_ids = [s['image_id'] for s in batch]
+        question_ids = [s['question_id'] for s in batch]
+        labels = torch.stack([s['label'] for s in batch])
+
+        image_names = []
+        ori_imgs = []
+        for image_path in image_paths:
+            image_names.append(os.path.basename(image_path))
+
+        for image_path in image_paths:
+            ori_img = cv2.imread(image_path)
+            ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
+            ori_imgs.append(ori_img)
+        
+        npy_feats = []
+        npy_loc_feats = []
+        for npy_path, npy_loc_path in zip(npy_paths, npy_loc_paths):
+            npy_feat = np.load(npy_path, mmap_mode='r')['feat']
+            npy_loc_feat = np.load(npy_loc_path, mmap_mode='r')['feat']
+            npy_feats.append(npy_feat)
+            npy_loc_feats.append(npy_loc_feat)
+
+        npy_feats = np.stack(npy_feats, axis=0)
+        npy_loc_feats = np.stack(npy_loc_feats, axis=0)
+
+        feats = torch.from_numpy(npy_feats).float()
+        loc_feats = torch.from_numpy(npy_loc_feats).float()
+
+        image_masks = torch.ones(feats.shape[:2])
+
+        texts = [s['text'] for s in batch]
+        
+        tokens = self.tokenizer(texts, truncation=True)
+        tokens = [np.array(i) for i in tokens['input_ids']]
+
+        texts_inp = make_feature_batch(
+            tokens, pad_token=self.tokenizer.pad_token_id)
+        
+        text_masks = create_masks(
+            texts_inp,
+            pad_token=self.tokenizer.pad_token_id, 
+            is_tgt_masking=True)
+        
+        texts_inp = texts_inp.squeeze(-1)
+
+        return {
+            'image_ids': image_ids,
+            'question_ids': question_ids,
+            'image_names': image_names,
+            'ori_imgs': ori_imgs,
+            'feats': feats,
+            'loc_feats': loc_feats,
+            'targets': labels.squeeze().long(),
+            'image_masks': image_masks.long(),
+            'tgt_texts_raw': texts,
+            'texts_inp': texts_inp.long(),
+            'text_masks': text_masks.long(),
+        }
+
+    def __str__(self): 
+        s1 = "Number of images: " + str(len(self.image_ids)) + '\n'
+        return s1

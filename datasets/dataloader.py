@@ -1,4 +1,4 @@
-from .cocoset import CocoDataset, NumpyFeatureDataset
+from .cocoset import CocoDataset, NumpyFeatureDataset, ValNumpyFeatureDataset
 from torch.utils.data import DataLoader
 from torchtext.legacy.data import BucketIterator
 
@@ -118,7 +118,7 @@ class RawNumpyFeatureLoader(DataLoader):
                 tokenizer,
                 **kwargs):
        
-        self.dataset = NumpyFeatureDataset(
+        self.dataset = ValNumpyFeatureDataset(
             root_dir, ann_path, tokenizer, npy_dir, question_path, class_path)
 
         self.tokenizer = self.dataset.tokenizer
