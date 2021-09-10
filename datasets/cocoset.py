@@ -125,6 +125,7 @@ class CocoDataset(Dataset):
 
             anns = []
             ques = []
+            quesIds = []
             for ann in annss:
                 quesId = ann['question_id']
                 question = self.coco.qqa[quesId]['question']
@@ -132,24 +133,20 @@ class CocoDataset(Dataset):
                 for answer in ann['answers']:
                     an.append(answer['answer'])
                 anns.append(an)
-                ques.append({
-                    'quesid': quesId,
-                    'text':question
-                })
+                ques.append(question)
+                quesIds.append(quesId)
 
-        return anns, ques
+        return anns, ques, quesId
 
     def __getitem__(self, index):
         image_id = self.image_ids[index]
         image_path = self.load_image(index)
-        if self.type == 'train':
-            ans, ques = self.load_annotations(index)
-        if self.type == 'val':
-            ans, ques = self.load_annotations(index, return_all=True)
+        ans, ques, quesId = self.load_annotations(index)
         label = self.classes_idx[ans]
 
         return {
             'image_id': image_id,
+            'question_id': quesId,
             'image_path': image_path,
             'text': ques,
             'label': torch.LongTensor([label])
@@ -167,6 +164,7 @@ class CocoDataset(Dataset):
         
         image_paths = [s['image_path'] for s in batch]
         image_ids = [s['image_id'] for s in batch]
+        question_ids = [s['question_id'] for s in batch]
         labels = torch.stack([s['label'] for s in batch])
         
         image_names = []
@@ -201,6 +199,7 @@ class CocoDataset(Dataset):
 
         return {
             'image_ids': image_ids,
+            'question_ids': question_ids,
             'targets': labels.squeeze().long(),
             'image_names': image_names,
             'ori_imgs': ori_imgs,
@@ -223,8 +222,10 @@ class CocoDataset(Dataset):
         image_name = os.path.basename(image_path)
         image, _ = self.load_augment(image_path)
 
-        ans, ques = self.load_annotations(index, return_all=True)
+        ans, ques, quesId = self.load_annotations(index, return_all=True)
         
+        ques_dict = [{'quesid': k, 'text': v} for k, v in zip(quesId, ques)]
+
         normalize = False
         if self.transforms is not None:
             for x in self.transforms.transforms[1]:
@@ -236,7 +237,7 @@ class CocoDataset(Dataset):
         if normalize:
             image = denormalize(img = image)
 
-        self.visualize(image, ans, ques, figsize = figsize, img_name= image_name)
+        self.visualize(image, ans, ques_dict, figsize = figsize, img_name= image_name)
 
     def visualize(self, img, answers, questions, figsize=(15,15), img_name=None):
         """
