@@ -79,13 +79,13 @@ class NLPMetrics(TemplateMetric):
                     if idx > total_iter:
                         break
                     
-                    questions = batch['text']
+                    questions = batch['question_ids']
                     preds = self.model.inference_step(batch)
                     
                     for question, pred in zip(questions, preds):
                             
                         result_dict.append({
-                            "question_id": question['quesid'],
+                            "question_id": question,
                             "answer": self.class_mapping(int(pred))
                         })
                                                     
