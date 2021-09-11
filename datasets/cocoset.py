@@ -550,14 +550,12 @@ class ValNumpyFeatureDataset(Dataset):
         self.idx_classes = idx_classes
         self.num_classes = len(self.classes_idx)
 
-    def load_image(self, question_index):
-        image_id = self.coco.getImgIds(quesIds=self.question_ids[question_index])
+    def load_image(self, image_id):
         image_info = self.coco.loadImgs(image_id)[0]
         image_path = os.path.join(self.root_dir, image_info['file_name'])
         return image_path
 
-    def load_numpy(self, question_index):
-        image_id = self.coco.getImgIds(quesIds=self.question_ids[question_index])
+    def load_numpy(self, image_id):
         image_info = self.coco.loadImgs(image_id)[0]
         npy_path = os.path.join(self.npy_dir,'data_att', str(image_info['id'])+'.npz')
         npy_loc_path = os.path.join(self.npy_dir,'data_box', str(image_info['id'])+'.npz')
@@ -566,25 +564,23 @@ class ValNumpyFeatureDataset(Dataset):
     def load_annotations(self, question_index):
         # get ground truth annotations
 
-        quesId = self.question_ids[question_index]
-        anns = self.coco.loadQA(quesId)[0]
-
-        ques = self.coco.qqa[quesId]['question']
+        anns = self.coco.loadQA(question_index)[0]
+        ques = self.coco.qqa[question_index]['question']
         anns = [i['answer'] for i in anns['answers']][0]
           
         return anns, ques
 
     def __getitem__(self, index):
-        image_id = self.coco.getImgIds(quesIds=self.question_ids[index])[0]
-        quesId = self.question_ids[index]
-        image_path = self.load_image(index)
-        ans, ques = self.load_annotations(index)
-        npy_path, npy_loc_path = self.load_numpy(index)
+        question_id = self.question_ids[index]
+        image_id = self.coco.getImgIds(quesIds=question_id)[0]
+        image_path = self.load_image(image_id)
+        ans, ques = self.load_annotations(question_id)
+        npy_path, npy_loc_path = self.load_numpy(image_id)
         label = self.classes_idx[ans]
 
         return {
             'image_id': image_id,
-            'question_id': quesId,
+            'question_id': question_id,
             'image_path': image_path,
             'npy_path': npy_path,
             'npy_loc_path': npy_loc_path,
