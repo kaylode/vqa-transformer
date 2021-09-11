@@ -142,14 +142,14 @@ def get_dataset_and_dataloader(config, bottom_up):
             type='val', batch_size=config.batch_size)
     else:
         trainloader = NumpyFeatureLoader(
-            root_dir=config.image_path, npy_dir=config.npy_dir,
+            root_dir=config.train_imgs, npy_dir=config.npy_dir,
             question_path=config.train_question, class_path=config.class_path,
             batch_size=config.batch_size,
             ann_path=config.train_anns, device=device,
             tokenizer=AutoTokenizer.from_pretrained(config.language))
 
         valloader = RawNumpyFeatureLoader(
-            root_dir=config.image_path, npy_dir=config.npy_dir,
+            root_dir=config.val_imgs, npy_dir=config.npy_dir,
             question_path=config.train_question, class_path=config.class_path,
             batch_size=32,
             ann_path=config.val_anns,
