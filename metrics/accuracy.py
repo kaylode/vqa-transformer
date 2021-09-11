@@ -92,7 +92,7 @@ class AccuracyMetric(TemplateMetric):
                             
                         result_dict.append({
                             "question_id": question,
-                            "answer": self.class_mapping(int(pred))
+                            "answer": self.class_mapping[int(pred)]
                         })
                                                     
                     pbar.update(1)

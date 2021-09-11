@@ -154,7 +154,7 @@ class VQA:
 			anns = self.dataset['annotations']
 		else:
 			if not len(quesIds) == 0:
-				anns = sum([self.qa[quesId] for quesId in quesIds if quesId in self.qa],[])
+				anns = [self.qa[quesId] for quesId in quesIds if quesId in self.qa]
 			else:
 				anns = self.dataset['annotations']
 			anns = anns if len(quesTypes) == 0 else [ann for ann in anns if ann['question_type'] in quesTypes]

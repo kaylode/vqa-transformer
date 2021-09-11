@@ -199,8 +199,8 @@ class Trainer():
         self.logging(log_dict, step=self.epoch)
 
         # Save model gives best average BLEU score
-        if metric_dict['BLEU'] > self.best_value:
-            self.best_value = metric_dict['BLEU']
+        if metric_dict['accuracy'] > self.best_value:
+            self.best_value = metric_dict['accuracy']
             self.checkpoint.save(
                 self.model, 
                 save_mode = 'best', 
