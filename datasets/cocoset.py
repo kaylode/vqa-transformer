@@ -577,7 +577,7 @@ class ValNumpyFeatureDataset(Dataset):
     def __getitem__(self, index):
         image_id = self.coco.getImgIds(quesIds=self.question_ids[index])[0]
         quesId = self.question_ids[index]
-        # image_path = self.load_image(index)
+        image_path = self.load_image(index)
         ans, ques = self.load_annotations(index)
         npy_path, npy_loc_path = self.load_numpy(index)
         label = self.classes_idx[ans]
@@ -585,7 +585,7 @@ class ValNumpyFeatureDataset(Dataset):
         return {
             'image_id': image_id,
             'question_id': quesId,
-            'image_path': None,
+            'image_path': image_path,
             'npy_path': npy_path,
             'npy_loc_path': npy_loc_path,
             'text': ques,
@@ -594,22 +594,22 @@ class ValNumpyFeatureDataset(Dataset):
 
     def collate_fn(self, batch):
         
-        # image_paths = [s['image_path'] for s in batch]
+        image_paths = [s['image_path'] for s in batch]
         npy_paths = [s['npy_path'] for s in batch]
         npy_loc_paths = [s['npy_loc_path'] for s in batch]
         image_ids = [s['image_id'] for s in batch]
         question_ids = [s['question_id'] for s in batch]
         labels = torch.stack([s['label'] for s in batch])
 
-        # image_names = []
-        # ori_imgs = []
-        # for image_path in image_paths:
-        #     image_names.append(os.path.basename(image_path))
+        image_names = []
+        ori_imgs = []
+        for image_path in image_paths:
+            image_names.append(os.path.basename(image_path))
 
-        # for image_path in image_paths:
-        #     ori_img = cv2.imread(image_path)
-        #     ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
-        #     ori_imgs.append(ori_img)
+        for image_path in image_paths:
+            ori_img = cv2.imread(image_path)
+            ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
+            ori_imgs.append(ori_img)
         
         npy_feats = []
         npy_loc_feats = []
@@ -645,8 +645,8 @@ class ValNumpyFeatureDataset(Dataset):
         return {
             'image_ids': image_ids,
             'question_ids': question_ids,
-            'image_names': None,
-            'ori_imgs': None,
+            'image_names': image_names,
+            'ori_imgs': ori_imgs,
             'feats': feats,
             'loc_feats': loc_feats,
             'targets': labels.squeeze().long(),
