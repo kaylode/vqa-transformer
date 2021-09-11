@@ -36,9 +36,15 @@ def _eval(gt_ans_path, gt_ques_path, pred_path, class_path):
 
     # create output dictionary
     stats = vqaEval.accuracy
-    return stats
 
-class NLPMetrics(TemplateMetric):
+    result_dict = {
+        'accuracy': stats['overall']
+    }
+    # ['perQuestionType']
+    # ['perAnswerType']
+    return result_dict
+
+class AccuracyMetric(TemplateMetric):
     def __init__(
             self,
             dataloader, 
