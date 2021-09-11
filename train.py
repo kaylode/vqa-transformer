@@ -41,7 +41,7 @@ def train(args, config):
     model = Captioning(
             model = net,
             criterion=criterion,
-            # metrics=NLPMetrics(valloader, metrics_list=['bleu', "meteor", 'rouge', 'cider', 'spice']),
+            metrics=AccuracyMetric(valloader, max_samples = None),
             scaler=NativeScaler(),
             optimizer= optimizer,
             optim_params = optimizer_params,     
