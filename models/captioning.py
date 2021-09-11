@@ -81,7 +81,7 @@ class Captioning(BaseModel):
         if return_probs:
             probs = torch.nn.functional.softmax(outputs, dim=1)
             probs, _ = torch.max(probs, dim=1)
-            return preds.cpu().numpy(), probs.cpu().numpy()
+            return preds.cpu().numpy(), probs.detach().cpu().numpy()
         else:
             return preds.cpu().numpy()
 

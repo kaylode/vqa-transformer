@@ -222,25 +222,30 @@ class Trainer():
 
         result = {
             'image_name': [],
+            'question': [],
             'gt': [],
             'pred': []
         }
         self.model.eval()
+        class_mapping = self.valloader.dataset.idx_classes
         for idx, batch in enumerate(self.valloader):
 
-            raw_targets = batch['tgt_texts_raw']
+            raw_questions = batch['tgt_texts_raw']
+            raw_targets = batch['targets']
             ori_imgs = batch['ori_imgs']
             image_names = batch['image_names']
             preds = self.model.inference_step(batch, self.valloader.tokenizer)
             for i in range(len(ori_imgs)):
                 image_name = os.path.basename(image_names[i])
                 result['image_name'].append(image_name)
-                result['gt'].append(raw_targets[i])
-                result['pred'].append(preds[i])
+                result['question'].append(raw_questions[i])
+
+                result['gt'].append(class_mapping[raw_targets[i]])
+                result['pred'].append(class_mapping[preds[i]])
 
                 fig = draw_image_caption(
                     image = ori_imgs[i],
-                    text = f"GT: {raw_targets[i]} \n Pred: {preds[i]}")
+                    text = f"Question: {raw_questions[i]} \n GT: {raw_targets[i]} \n Pred: {preds[i]}")
 
                 tag = f"{image_name}"
                 self.logger.write_image(tag, fig, self.epoch)
