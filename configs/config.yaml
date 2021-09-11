@@ -4,12 +4,12 @@ settings:
   project_name: "vqa"    
   train_imgs: "/content/data/train2014"
   val_imgs: "/content/data/val2014"
-  train_anns: "/content/data/VQAv2/v2_coco_train2014_annotations.json"
-  val_anns: "/content/data/VQAv2/v2_coco_val2014_annotations.json"
-  train_question: "/content/data/VQAv2/v2_OpenEnded_mscoco_train2014_questions.json"
-  val_question: "/content/data/VQAv2/v2_OpenEnded_mscoco_val2014_questions.json"
-  class_path: "/content/data/VQAv2/3klabel.txt"
-  npy_dir:
+  train_anns: "/content/data/annotations/train_annotations.json"
+  val_anns: "/content/data/annotations/val_annotations.json"
+  train_question: "/content/data/annotations/train_question.json"
+  val_question: "/content/data/annotations/val_question.json"
+  class_path: "/content/data/annotations/toronto_430label.txt"
+  npy_dir: "/content/data/toronto_bottom_up"
 
   #################   TRAINING CONFIG   ###################
   
