@@ -10,8 +10,9 @@ import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 class VQAEval:
-	def __init__(self, vqa, vqaRes, n=2):
+	def __init__(self, vqa, vqaRes, min_same_answers=3, n=2):
 		self.n 			  = n
+		self.min_same_answers = min_same_answers
 		self.accuracy     = {}
 		self.evalQA       = {}
 		self.evalQuesType = {}
@@ -93,7 +94,6 @@ class VQAEval:
 			resAns = resAns.replace('\n', ' ')
 			resAns = resAns.replace('\t', ' ')
 			resAns = resAns.strip()
-			gtAcc = []
 			gtAnswers = [ans['answer'] for ans in gts[quesId]['answers']]
 
 			if len(set(gtAnswers)) > 1:
@@ -103,14 +103,12 @@ class VQAEval:
 				resAns = self.processPunctuation(resAns)
 				resAns = self.processDigitArticle(resAns)
 
-			for gtAnsDatum in gts[quesId]['answers']:
-				otherGTAns = [item for item in gts[quesId]['answers'] if item!=gtAnsDatum]
-				matchingAns = [item for item in otherGTAns if item['answer']==resAns]
-				acc = min(1, float(len(matchingAns))/3)
-				gtAcc.append(acc)
 			quesType    = gts[quesId]['question_type']
 			ansType     = gts[quesId]['answer_type']
-			avgGTAcc = float(sum(gtAcc))/len(gtAcc)
+
+			matchingAns = [item for item in gts[quesId]['answers'] if item['answer']==resAns]
+			avgGTAcc = min(1, float(len(matchingAns))/self.min_same_answers)
+
 			accQA.append(avgGTAcc)
 			if quesType not in accQuesType:
 				accQuesType[quesType] = []
