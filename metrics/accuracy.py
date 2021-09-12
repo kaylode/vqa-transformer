@@ -30,7 +30,7 @@ def _eval(gt_ans_path, gt_ques_path, pred_path, class_path):
     vqaRes = vqa.loadRes(pred_path, gt_ques_path)
 
     # create vqaEval object by taking vqa and vqaRes
-    vqaEval = VQAEval(vqa, vqaRes, n=3)   #n is precision of accuracy (number of places after decimal), default is 2
+    vqaEval = VQAEval(vqa, vqaRes, n=3, min_same_answers=1)   #n is precision of accuracy (number of places after decimal), default is 2
 
     vqaEval.evaluate()
 
