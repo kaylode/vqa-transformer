@@ -22,7 +22,7 @@ def get_transformer_bottomup_model(bottom_up_dim, trg_vocab, num_classes):
         'num_classes':      num_classes,
         "d_model":          512, 
         "d_ff":             2048,
-        "N_enc":            3,
+        "N_enc":            0,
         "N_dec":            3,
         "heads":            4,
         "dropout":          0.1,
