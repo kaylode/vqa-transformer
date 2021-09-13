@@ -151,7 +151,7 @@ def get_dataset_and_dataloader(config, bottom_up):
         valloader = RawNumpyFeatureLoader(
             root_dir=config.val_imgs, npy_dir=config.npy_dir,
             question_path=config.val_question, class_path=config.class_path,
-            batch_size=config.batch_size,
+            batch_size=64,
             ann_path=config.val_anns,
             tokenizer=AutoTokenizer.from_pretrained(config.language))
 
