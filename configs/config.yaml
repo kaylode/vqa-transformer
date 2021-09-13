@@ -8,19 +8,19 @@ settings:
   val_anns: "/content/data/annotations/val_annotations.json"
   train_question: "/content/data/annotations/train_question.json"
   val_question: "/content/data/annotations/val_question.json"
-  class_path: "/content/data/annotations/toronto_430label.txt"
+  class_path: "./configs/toronto_430label.txt"
   npy_dir: "/content/data/toronto_bottom_up"
 
   #################   TRAINING CONFIG   ###################
   
-  model_name:  'catr' 
+  model_name:  'vqatr' 
   language:    'bert-base-uncased'
   image_size:   [224,224]               # 224 or 384 (pretrained vit support these only)
   keep_ratio:   False
 
   gpu_devices: '0'                     # supports multi-gpus
   num_epochs: 100
-  batch_size: 128
+  batch_size: 256
   num_workers: 2
 
   # learning rate policy
