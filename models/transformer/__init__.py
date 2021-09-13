@@ -66,15 +66,18 @@ class EncoderBottomUp(nn.Module):
         self.N = N
         self.feat_embed = FeatureEmbedding(feat_dim, d_model)
         self.loc_embed = SpatialEncoding(d_model)
-        self.layers = get_clones(EncoderLayer(d_model, d_ff, heads, dropout), N)
-        self.norm = LayerNorm(d_model)    
+        if N > 0:
+            self.layers = get_clones(EncoderLayer(d_model, d_ff, heads, dropout), N)
+            self.norm = LayerNorm(d_model)    
     def forward(self, src, spatial_src):
         x = self.feat_embed(src)
         spatial_x = self.loc_embed(spatial_src)
         x += spatial_x
-        for i in range(self.N):
-            x = self.layers[i](x, mask=None)
-        x = self.norm(x)
+
+        if self.N > 0:
+            for i in range(self.N):
+                x = self.layers[i](x, mask=None)
+            x = self.norm(x)
         return x
 
 class Decoder(nn.Module):
@@ -136,10 +139,8 @@ class Transformer(nn.Module):
         e_outputs = self.encoder(src)
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask)
 
-        # Get first CLS token
-        cls_toks = d_output[:, 0, :]
-
-        output = self.out(cls_toks)
+        # Aggregate
+        output = self.out(d_output).mean(dim=1)
         return output
         
 class TransformerBottomUp(nn.Module):
@@ -169,8 +170,6 @@ class TransformerBottomUp(nn.Module):
         e_outputs = self.encoder(src, loc_src)
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask)
 
-        # Get first CLS token
-        cls_toks = d_output[:, 0, :]
-
-        output = self.out(cls_toks)
+        # Aggregate
+        output = self.out(d_output).mean(dim=1)
         return output

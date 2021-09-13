@@ -20,12 +20,12 @@ def get_transformer_bottomup_model(bottom_up_dim, trg_vocab, num_classes):
         'feat_dim':       bottom_up_dim,
         'trg_vocab':        trg_vocab, 
         'num_classes':      num_classes,
-        "d_model":          768, 
-        "d_ff":             3072,
-        "N_enc":            6,
-        "N_dec":            6,
-        "heads":            8,
-        "dropout":          0.3,
+        "d_model":          512, 
+        "d_ff":             2048,
+        "N_enc":            3,
+        "N_dec":            3,
+        "heads":            4,
+        "dropout":          0.1,
     }
 
     return TransformerBottomUp(**transformer_config)
