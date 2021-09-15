@@ -178,8 +178,6 @@ class CocoDataset(Dataset):
             imgs.append(image)
             ori_imgs.append(ori_img)
         feats = torch.stack(imgs)
-        mask_shapes = int((self.image_size[0] / self.patch_size) **2)
-        image_masks = torch.ones((feats.shape[0], mask_shapes))
 
         texts = [s['text'] for s in batch]
         
@@ -188,12 +186,6 @@ class CocoDataset(Dataset):
 
         texts_inp = make_feature_batch(
             tokens, pad_token=self.tokenizer.pad_token_id)
-        
-
-        text_masks = create_masks(
-            texts_inp,
-            pad_token=self.tokenizer.pad_token_id, 
-            is_tgt_masking=True)
         
         texts_inp = texts_inp.squeeze(-1)
 
@@ -204,10 +196,8 @@ class CocoDataset(Dataset):
             'image_names': image_names,
             'ori_imgs': ori_imgs,
             'image_patches': feats,
-            'image_masks': image_masks.long(),
             'tgt_texts_raw': texts,
             'texts_inp': texts_inp.long(),
-            'text_masks': text_masks.long(),
         }
 
 
@@ -439,8 +429,6 @@ class NumpyFeatureDataset(Dataset):
         feats = torch.from_numpy(npy_feats).float()
         loc_feats = torch.from_numpy(npy_loc_feats).float()
 
-        image_masks = torch.ones(feats.shape[:2])
-
         texts = [s['text'] for s in batch]
         
         tokens = self.tokenizer(texts, truncation=True)
@@ -448,11 +436,6 @@ class NumpyFeatureDataset(Dataset):
 
         texts_inp = make_feature_batch(
             tokens, pad_token=self.tokenizer.pad_token_id)
-        
-        text_masks = create_masks(
-            texts_inp,
-            pad_token=self.tokenizer.pad_token_id, 
-            is_tgt_masking=True)
         
         texts_inp = texts_inp.squeeze(-1)
 
@@ -464,10 +447,8 @@ class NumpyFeatureDataset(Dataset):
             'feats': feats,
             'loc_feats': loc_feats,
             'targets': labels.squeeze().long(),
-            'image_masks': image_masks.long(),
             'tgt_texts_raw': texts,
             'texts_inp': texts_inp.long(),
-            'text_masks': text_masks.long(),
         }
 
     def __str__(self): 
@@ -621,8 +602,6 @@ class ValNumpyFeatureDataset(Dataset):
         feats = torch.from_numpy(npy_feats).float()
         loc_feats = torch.from_numpy(npy_loc_feats).float()
 
-        image_masks = torch.ones(feats.shape[:2])
-
         texts = [s['text'] for s in batch]
         
         tokens = self.tokenizer(texts, truncation=True)
@@ -630,11 +609,6 @@ class ValNumpyFeatureDataset(Dataset):
 
         texts_inp = make_feature_batch(
             tokens, pad_token=self.tokenizer.pad_token_id)
-        
-        text_masks = create_masks(
-            texts_inp,
-            pad_token=self.tokenizer.pad_token_id, 
-            is_tgt_masking=True)
         
         texts_inp = texts_inp.squeeze(-1)
 
@@ -646,10 +620,8 @@ class ValNumpyFeatureDataset(Dataset):
             'feats': feats,
             'loc_feats': loc_feats,
             'targets': labels.squeeze().long(),
-            'image_masks': image_masks.long(),
             'tgt_texts_raw': texts,
             'texts_inp': texts_inp.long(),
-            'text_masks': text_masks.long(),
         }
 
     def __str__(self): 

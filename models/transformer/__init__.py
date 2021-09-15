@@ -4,7 +4,6 @@ from .embedding import Embeddings, PositionalEncoding, PatchEmbedding, FeatureEm
 from .layers import EncoderLayer, DecoderLayer
 from .norm import LayerNorm
 from .utils import draw_attention_map, init_xavier
-from .search import sampling_search, beam_search
 
 TIMM_MODELS = [
         "deit_tiny_distilled_patch16_224", 
@@ -100,11 +99,11 @@ class Decoder(nn.Module):
         self.pe = PositionalEncoding(d_model, dropout_rate=dropout)
         self.layers = get_clones(DecoderLayer(d_model, d_ff, heads, dropout), N)
         self.norm = LayerNorm(d_model)
-    def forward(self, trg, e_outputs, src_mask, trg_mask):
+    def forward(self, trg, e_outputs):
         x = self.embed(trg)
         x = self.pe(x)
         for i in range(self.N):
-            x = self.layers[i](x, e_outputs, src_mask, trg_mask)
+            x = self.layers[i](x, e_outputs, None, None)
         return self.norm(x)
 
 class Transformer(nn.Module):
@@ -166,9 +165,9 @@ class TransformerBottomUp(nn.Module):
         self.out = nn.Linear(d_model, num_classes)
         init_xavier(self)
 
-    def forward(self, src, loc_src, trg, src_mask, trg_mask, *args, **kwargs):
+    def forward(self, src, loc_src, trg, *args, **kwargs):
         e_outputs = self.encoder(src, loc_src)
-        d_output = self.decoder(trg, e_outputs, src_mask, trg_mask)
+        d_output = self.decoder(trg, e_outputs)
 
         # Aggregate
         output = self.out(d_output).mean(dim=1)

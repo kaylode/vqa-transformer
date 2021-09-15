@@ -37,17 +37,13 @@ class Captioning(BaseModel):
         else:
             src_inputs = batch['image_patches'].to(self.device)
             loc_src_inputs = None
-        src_masks = batch['image_masks'].unsqueeze(-2).to(self.device)
         tgt_inputs = batch['texts_inp'].to(self.device)
         targets = batch['targets'].to(self.device)
-        tgt_masks = batch['text_masks'].to(self.device)
 
         outputs = self.model(
             src = src_inputs, 
             loc_src = loc_src_inputs,
-            trg = tgt_inputs, 
-            src_mask = src_masks, 
-            trg_mask = tgt_masks)
+            trg = tgt_inputs)
 
         loss = self.criterion(
                 outputs.contiguous().view(-1, outputs.size(-1)), 
@@ -64,16 +60,12 @@ class Captioning(BaseModel):
         else:
             src_inputs = batch['image_patches'].to(self.device)
             loc_src_inputs = None
-        src_masks = batch['image_masks'].unsqueeze(-2).to(self.device)
         tgt_inputs = batch['texts_inp'].to(self.device)
-        tgt_masks = batch['text_masks'].to(self.device)
 
         outputs = self.model(
             src = src_inputs, 
             loc_src = loc_src_inputs,
-            trg = tgt_inputs, 
-            src_mask = src_masks, 
-            trg_mask = tgt_masks)
+            trg = tgt_inputs)
             
         preds = torch.argmax(outputs, dim=1)
         preds = preds.detach()
@@ -94,17 +86,13 @@ class Captioning(BaseModel):
             src_inputs = batch['image_patches'].to(self.device)
             loc_src_inputs = None
 
-        src_masks = batch['image_masks'].unsqueeze(-2).to(self.device)
         tgt_inputs = batch['texts_inp'].to(self.device)
         targets = batch['targets'].to(self.device)
-        tgt_masks = batch['text_masks'].to(self.device)
 
         outputs = self.model(
             src = src_inputs, 
             loc_src = loc_src_inputs,
-            trg = tgt_inputs, 
-            src_mask = src_masks, 
-            trg_mask = tgt_masks)
+            trg = tgt_inputs)
 
         loss = self.criterion(
                 outputs.contiguous().view(-1, outputs.size(-1)), 
