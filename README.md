@@ -38,9 +38,10 @@ Before evaluating machine generated answers, the code do the following processin
 ## Results
 | Images | Question-Answer Pairing |
 |:-------------------------:|:-------------------------:|
-| <img width="450" alt="screen" src="demo/1.jpg"> | **Question**: what is on the sofa ? <br> **Answer**: cat (0.693) <br> <br> **Question**: what is the cat lying on ? <br> **Answer**: couch (0.097) <br> <br> **Question**: what color is the cat ? <br> **Answer**: orange (0.831) |
-| <img width="450" alt="screen" src="demo/2.jpg"> | **Question**: what is the woman carrying ? <br> **Answer**: umbrella (0.867) <br> <br> **Question**: what is color of the dress the woman wearing ? <br> **Answer**: white (0.589) |
+| <img width="450" alt="screen" src="demo/1.jpg"> | **Question**: what is on the sofa ? <br> **Answer**: cat (0.693) <br> <br> **Question**: what is the cat lying on ? <br> **Answer**: couch (0.097) <br> <br> **Question**: what color is the cat ? <br> **Answer**: orange (0.831) <br> <br> **Question**: how many cat are there on the sofa ? <br> **Answer**: two (0.584) |
 | <img width="450" alt="screen" src="demo/3.jpg"> |  **Question**: what are the people riding on ? <br> **Answer**: horses (0.633) <br> <br> **Question**: how many people are there ? <br> **Answer**: three (0.308) |
+| <img width="450" alt="screen" src="demo/2.jpg"> | **Question**: what is the woman carrying ? <br> **Answer**: umbrella (0.867) <br> <br> **Question**: what is color of the dress the woman wearing ? <br> **Answer**: white (0.589) |
+| <img width="450" alt="screen" src="demo/5.jpg"> |  **Question**: what are the people in the background doing ? <br> **Answer**: kites (0.426) <br> <br> **Question**: what is the kid wearing on the head ? <br> **Answer**: hat (0.239) <br> <br> **Question**: what is the color of the tent ? <br> **Answer**: green (0.326) <br> <br> **Question**: what is the color of the hat ? <br> **Answer**: blue (0.197) |
 | <img width="450" alt="screen" src="demo/4.jpg"> |  **Question**: what is the woman doing ? <br> **Answer**: surfboard (0.358) <br> <br> **Question**: what is color of the outfit of the woman ? <br> **Answer**: green (0.529) |
 
 ## Usage
