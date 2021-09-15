@@ -18,7 +18,7 @@ The following figure gives an overview of the baseline model architectures.
 
 
 ## Datasets
-I train both the bottom-up models on small subset of COCO2014 dataset, [Toronto COCO-QA](http://www.cs.toronto.edu/~mren/research/imageqa/data/cocoqa/),  which contains 123,287 images, with 78,736 train questions and 38,948 test questions. All answers in this subset are one-word. 
+I train both the bottom-up models on small subset of COCO2014 dataset, [Toronto COCO-QA](http://www.cs.toronto.edu/~mren/research/imageqa/data/cocoqa/),  which contains 123,287 images, with 78,736 train questions and 38,948 test questions. Questions in this subset consist of 4 types: object, number, color, location. All answers are one-word. 
 
 For VQA data format, see [VQA format](https://visualqa.org/vqa_v1_download.html)
 
@@ -36,6 +36,7 @@ Before evaluating machine generated answers, the code do the following processin
 - Replacing all punctuation (except apostrophe and colon) with a space character. We do not remove apostrophe because it can incorrectly change possessives to plural, e.g., “girl’s” to “girls” and colons because they often refer to time, e.g., 2:50 pm. In case of comma, no space is inserted if it occurs between digits, e.g., convert 100,978 to 100978. (This processing step is done for ground truth answers as well.)
 
 ## Results
+Despite using only small dataset and answer vocabulary, the results look acceptable. Moreover, we can see that the Transformer model learns well and pays attention to objects in the image.  
 | Images | Question-Answer Pairing |
 |:-------------------------:|:-------------------------:|
 | <img width="450" alt="screen" src="demo/1.jpg"> | **Question**: what is on the sofa ? <br> **Answer**: cat (0.693) <br> <br> **Question**: what is the cat lying on ? <br> **Answer**: couch (0.097) <br> <br> **Question**: what color is the cat ? <br> **Answer**: orange (0.831) <br> <br> **Question**: how many cat are there on the sofa ? <br> **Answer**: two (0.584) |
