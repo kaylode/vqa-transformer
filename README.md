@@ -13,7 +13,7 @@ The following figure gives an overview of the baseline model architectures.
 |:-------------------------:|
 |<img width="1000" alt="screen" src="demo/bottomup_encoder.PNG"> |
 
-- Answer vocabulary is built based on the all the answers in the train+val set.
+- Answer vocabulary is built based on the all the answers in the train+val set, can be seen [here](./configs/toronto_430label.txt).
 - To extract bottom-up features, I provide [Colab Notebook](https://colab.research.google.com/drive/1xC4mVc_bp0t4-7T4xVum3AECFCalsgsv?usp=sharing) which adapts code from [Detectron model](https://github.com/airsplay/py-bottom-up-attention)
 
 
